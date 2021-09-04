@@ -60,8 +60,7 @@ import qualified Data.Text.Internal.Encoding.Utf16 as U16
 import qualified Data.Text.Internal.Encoding.Utf32 as U32
 import qualified Data.Text.Internal.Encoding.Utf8  as U8
 import           Data.Text.Internal.Unsafe.Char    (unsafeChr, unsafeChr32,
-                                                    unsafeChr8)
-import           Data.Text.Internal.Unsafe.Char    (unsafeWrite)
+                                                    unsafeChr8, unsafeWrite)
 import           Data.Text.Internal.Unsafe.Shift   (shiftL)
 import           Data.Word                         (Word32, Word8)
 import           Foreign.C.Types                   (CSize (..))
@@ -83,9 +82,9 @@ data DecodeResult
     | DecodeResultFailure !Text !B.ByteString
 
 toBS :: S -> B.ByteString
-toBS S0 = B.empty
-toBS (S1 a) = B.pack [a]
-toBS (S2 a b) = B.pack [a, b]
+toBS S0         = B.empty
+toBS (S1 a)     = B.pack [a]
+toBS (S2 a b)   = B.pack [a, b]
 toBS (S3 a b c) = B.pack [a, b, c]
 {-# INLINE toBS #-}
 
@@ -132,7 +131,8 @@ decodeUtf8 = decodeChunk B.empty 0 0
         let end = ptr `plusPtr` (off + len)
             loop curPtr = do
               poke curPtrPtr curPtr
-              _ <- c_decode_utf8_with_state (A.maBA dest) destOffPtr
+              let (A.MutableByteArray maBA) = dest
+              _ <- c_decode_utf8_with_state maBA destOffPtr
                          curPtrPtr end codepointPtr statePtr
               state <- peek statePtr
               n <- peek destOffPtr
